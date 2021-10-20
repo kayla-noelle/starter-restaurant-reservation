@@ -5,10 +5,10 @@ function list() {
   .select("*");
 }
 
-function create(reservation){
+function create(newReservation){
     return knex("reservations")
-    .insert(reservation)
-    .returning("*")
+    .insert(newReservation)
+    .returning(newReservation,"*")
     .then((createdReservations) => createdReservations[0])
 }
 
