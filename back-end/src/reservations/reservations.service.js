@@ -15,7 +15,7 @@ function create(newReservation){
 function read(reservation_id){
     return knex("resevations")
     .select("*")
-    .where({reservation_id: reservation_id})
+    .where({"reservation_id": reservation_id})
     .first()
 }
 
