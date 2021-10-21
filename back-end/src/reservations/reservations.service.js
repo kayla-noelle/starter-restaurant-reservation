@@ -10,17 +10,11 @@ function listByDate(reservation_date){
   .select("*")
   .where({reservation_date})
   .whereNot("status","finished")
-  .orderBy("reservation_time","asc")
+  .andWhereNot("status","cancelled")
+  .orderBy("reservation_time")
 }
 
-function listByPhone(mobile_number){
-  return knex("reservations")
-  .whereRaw(
-    "translate(mobile_number, '() -', '') like ?",
-    `%${mobile_number.replace(/\D/g, "")}%`
-  )
-  .orderBy("reservation_id");
-}
+
 
 function create(newReservation){
     return knex("reservations")
@@ -39,7 +33,6 @@ function read(reservation_id){
 module.exports = {
   list,
   listByDate,
-  listByPhone,
   create,
   read,
 };

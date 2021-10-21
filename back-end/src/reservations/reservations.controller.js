@@ -1,5 +1,7 @@
 const service = require("./reservations.service");
+const hasProperties = require("../errors/hasProperties")
 const asyncErrorBoundary = require("../errors/asyncErrorBoundary");
+const { as } = require("../db/connection");
 /**
  * List handler for reservation resources
  */
@@ -24,9 +26,9 @@ next({ status: 404, message: `Reservation ${reservation_id} cannot be found.`});
  async function listByDate(req,res){
    res.json({ data: await service.listByDate() });
  }
- async function listByPhone(req,res){
-   res.json({ data: await service.listByPhone() });
- }
+//  async function listByPhone(req,res){
+//    res.json({ data: await service.listByPhone() });
+//  }
 
 async function create(req, res) {
   const data = await service.create(req.body.data);
@@ -38,27 +40,37 @@ async function read(req, res){
 
 ///////////// CHECK IF FIELD MEETS REQUIREMENTS//////////////
 
+const VALID_PROPERTIES = [
+  "first_name",
+  "last_name",
+  "mobile_number",
+  "reservation_date",
+  "reservation_time",
+  "people",
+];
 
-///// Check to see if Data is missing///////
-function hasData(req,res, next){
-  const data = req.body.data
-  if(data){
-    next();
-  }
-  next({
-    status: 400,
-    message:"Body must have data property"
-  })
+function hasOnlyValidProperties(req, res, next) {
+  const { data = {} } = req.body;
 
+  const invalidFields = Object.keys(data).filter(
+    (field) => !VALID_PROPERTIES.includes(field)
+  );
+
+  if (invalidFields.length)
+    return next({
+      status: 400,
+      message: `Invalid field(s): ${invalidFields.join(", ")}`,
+    });
+  next();
 }
-
-
-
+const hasRequiredProperties = hasProperties(...VALID_PROPERTIES);
 
 module.exports = {
   list,
   listByDate,
-  listByPhone,
-  create:[hasData, asyncErrorBoundary(create)],
+  create:[
+    asyncErrorBoundary(hasRequiredProperties),
+    asyncErrorBoundary(hasOnlyValidProperties),
+    asyncErrorBoundary(create)],
   read:[reservationExists, read],
 };
