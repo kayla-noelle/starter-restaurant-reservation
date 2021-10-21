@@ -6,18 +6,27 @@ const asyncErrorBoundary = require("../errors/asyncErrorBoundary");
 
 //Check if reservation exists
 async function reservationExists(req,res,next){
-const reservation = await service.read(req.params.reservation_id);
+const { reservation_id} = req.params
+const reservation = await service.read(reservation_id);
 if(reservation){
   res.locals.reservation = reservation;
   return next();
 }
-next({ status: 404, message: `Reservation ${req.params.reservation_id} cannot be found.`});
+next({ status: 404, message: `Reservation ${reservation_id} cannot be found.`});
 }
 
+//return date and time
  async function list(req, res) {
   const data = await service.list();
   res.json({ data });
 }
+
+ async function listByDate(req,res){
+   res.json({ data: await service.listByDate() });
+ }
+ async function listByPhone(req,res){
+   res.json({ data: await service.listByPhone() });
+ }
 
 async function create(req, res) {
   const data = await service.create(req.body.data);
@@ -28,37 +37,28 @@ async function read(req, res){
 }
 
 ///////////// CHECK IF FIELD MEETS REQUIREMENTS//////////////
-// const VALID_PROPERTIES = [
-//   "first_name",
-//   "last_name",
-//   "mobile_number",
-//   "reservation_date",
-//   "reservation_time",
-//   "people",
-//   "status",
-// ];
 
-// function hasOnlyValidProperties(req, res, next) {
-//   const { data = {} } = req.body;
 
-//   const invalidFields = Object.keys(data).filter(
-//     (field) => !VALID_PROPERTIES.includes(field)
-//   );
+///// Check to see if Data is missing///////
+function hasData(req,res, next){
+  const data = req.body.data
+  if(data){
+    next();
+  }
+  next({
+    status: 400,
+    message:"Body must have data property"
+  })
 
-//   if (invalidFields.length)
-//     return next({
-//       status: 400,
-//       message: `Invalid field(s): ${invalidFields.join(", ")}`,
-//     });
-//   next();
-// }
-
+}
 
 
 
 
 module.exports = {
   list,
-  create:[asyncErrorBoundary(create)],
+  listByDate,
+  listByPhone,
+  create:[hasData, asyncErrorBoundary(create)],
   read:[reservationExists, read],
 };
