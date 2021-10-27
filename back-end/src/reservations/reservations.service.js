@@ -1,18 +1,21 @@
 const knex = require("../db/connection");
-//
-function list() {
-  return knex("reservations")
-  .select("*");
+
+function list(date) {
+   const query = knex("reservations")
+      .select("*")
+      .where({ reservation_date: date })
+      .orderBy("reservation_time", "asc")
+      return query
 }
 
-function listByDate(reservation_date){
-  return knex("reservations")
-  .select("*")
-  .where({reservation_date})
-  .whereNot("status","finished")
-  .andWhereNot("status","cancelled")
-  .orderBy("reservation_time")
-}
+// function listByDate(reservation_date){
+//   return knex("reservations")
+//   .select("*")
+//   .where({reservation_date})
+//   .whereNot("status","finished")
+//   .andWhereNot("status","cancelled")
+//   .orderBy("reservation_time");
+// }
 
 
 
@@ -32,7 +35,6 @@ function read(reservation_id){
 
 module.exports = {
   list,
-  listByDate,
   create,
   read,
 };
