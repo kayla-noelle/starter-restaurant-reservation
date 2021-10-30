@@ -26,12 +26,6 @@ async function list(req, res) {
   }
 }
 
-//  async function listByDate(req,res){
-//     res.json({ data: await service.listByDate(date) });
-//   }
-//  async function listByPhone(req,res){
-//    res.json({ data: await service.listByPhone() });
-//  }
 
 async function create(req, res) {
   const data = await service.create(req.body.data);
@@ -42,7 +36,6 @@ async function read(req, res){
 }
 
 ///////////// CHECK IF FIELD MEETS REQUIREMENTS//////////////
-
 const VALID_PROPERTIES = [
   "first_name",
   "last_name",
@@ -54,6 +47,7 @@ const VALID_PROPERTIES = [
 
 function hasOnlyValidProperties(req, res, next) {
   const { data = {} } = req.body;
+
 
   const invalidFields = Object.keys(data).filter(
     (field) => !VALID_PROPERTIES.includes(field)
@@ -69,7 +63,6 @@ function hasOnlyValidProperties(req, res, next) {
 const hasRequiredProperties = hasProperties(...VALID_PROPERTIES);
 
 
-
 //VALIDATE IF PEOPLE IS A NUMBER
 function validatePeople(req, res, next){
   const {people} = req.body.data;
@@ -82,7 +75,6 @@ function validatePeople(req, res, next){
   next();
 }
 //VALIDATE RESERVATION DATE AND TIME FORMAT
-
 function validateDate(req, res, next) {
   const date = req.body.data.reservation_date;
   const valid = Date.parse(date);
@@ -94,6 +86,7 @@ function validateDate(req, res, next) {
     status: 400,
     message: "reservation_date must be valid date.",
   })
+
 }
 
 function validateTime(req, res, next){
@@ -109,6 +102,52 @@ function validateTime(req, res, next){
     message: "reservation_time must be valid time.",
   })
 }
+///////Returns 400 if reservation occurs in the past or falls on a Tuesday/////////
+function noPastReservation(req,res,next){
+  const { reservation_date, reservation_time } =req.body.data
+  const todaysDate = Date.now();
+  const newReservationDate = new Date(`${reservation_date} ${reservation_time}`);
+
+  if(newReservationDate > todaysDate){
+    return next();
+  }
+  next({
+    status:400,
+    message: "Reservation must be in the future",
+  })
+
+}
+
+function notTuesday(req,res,next){
+  const { reservation_date } = req.body.data;
+  const reservationDate = new Date(reservation_date)
+  const day = reservationDate.getDay();
+
+  if(day === 2){
+    return next();
+  }
+   next({
+     status:400,
+     message: "Restaurant is closed on Tuesday",
+   })
+
+}
+///////////////////OPERATING HOURS/////////////////////
+function operatingHours(req,res,next){
+const { reservation_date } = req.body.data;
+const date = new Date(reservation_date);
+const currentHours = date.getHours();
+const currentMins = date.getMinutes();
+if( currentHours < 10 || (currentHours === 10 && currentMins <30)){
+  return next({ status: 400, message: "Reservation is not opened until 10:30am"})
+}
+if( currentHours > 22 || (currentHours === 22 && currentMins >= 30)){
+  return next({ status: 400, message: "Reservation is closed after 10:30pm"})
+}
+if( currentHours < 21 || (currentHours === 21 && currentMins > 30)){
+  return next({ status: 400, message: "Reservation must be made at least a hour before closing"})
+}
+}
 
 module.exports = {
   list: asyncErrorBoundary(list),
@@ -118,6 +157,9 @@ module.exports = {
     asyncErrorBoundary(validatePeople),
     asyncErrorBoundary(validateDate),
     asyncErrorBoundary(validateTime),
+    asyncErrorBoundary(noPastReservation),
+    asyncErrorBoundary(notTuesday),
+    asyncErrorBoundary(operatingHours),
     asyncErrorBoundary(create)],
   read:[asyncErrorBoundary(reservationExists), read],
 };
