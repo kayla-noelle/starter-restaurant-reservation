@@ -49,6 +49,8 @@
   "author": "Thinkful, Inc.",
   "license": "UNLICENSED",
   "dependencies": {
-    "knex": "^0.95.14"
+    "knex": "^0.95.14",
+    "react-dev-utils": "^10.0.0",
+    "react-scripts": "^4.0.3"
   }
 }
